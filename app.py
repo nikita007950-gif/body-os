@@ -1,22 +1,41 @@
-import streamlit as st
 import sqlite3
-import pandas as pd
-from datetime import date, datetime
 from pathlib import Path
+from datetime import date, datetime
 
+import pandas as pd
+import streamlit as st
 
+st.set_page_config(
+    page_title="Body OS",
+    page_icon="💪",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# =========================
+# AUTH
+# =========================
 def check_auth():
     if "auth" not in st.session_state:
         st.session_state.auth = False
 
     if not st.session_state.auth:
-        st.title("🔐 Вход в Body OS")
+        st.markdown(
+            """
+            <div style="max-width:420px;margin:80px auto 0 auto;padding:28px;
+                        border:1px solid #1f2937;border-radius:20px;background:#111827;">
+                <h1 style="margin:0 0 8px 0;">🔐 Body OS</h1>
+                <p style="color:#9ca3af;margin:0;">Вход в приложение</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
         username = st.text_input("Логин")
         password = st.text_input("Пароль", type="password")
 
-        if st.button("Войти"):
-            if username == "nikita_k" and password == "784326":
+        if st.button("Войти", use_container_width=True):
+            if username == "nikita" and password == "784326":
                 st.session_state.auth = True
                 st.rerun()
             else:
@@ -27,20 +46,9 @@ def check_auth():
 
 check_auth()
 
-st.set_page_config(
-    page_title="Body OS",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
-DATA_DIR = Path("data")
-DATA_DIR.mkdir(exist_ok=True)
-DB_PATH = str(DATA_DIR / "body_os.db")
-
 # =========================
 # STYLES
 # =========================
-
 st.markdown(
     """
     <style>
@@ -50,34 +58,35 @@ st.markdown(
     }
 
     .block-container {
-        max-width: 1180px;
-        padding-top: 2rem;
+        max-width: 1200px;
+        padding-top: 1.5rem;
         padding-bottom: 2rem;
     }
 
-    h1, h2, h3 {
-        letter-spacing: -0.02em;
+    section[data-testid="stSidebar"] {
+        background: #0f172a;
+        border-right: 1px solid #1e293b;
     }
 
     .hero {
         background: linear-gradient(135deg, #111827 0%, #172554 100%);
         border: 1px solid #1f2937;
         border-radius: 24px;
-        padding: 28px 28px 20px 28px;
+        padding: 28px;
         margin-bottom: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.22);
     }
 
     .hero-title {
-        font-size: 42px;
+        font-size: 40px;
         font-weight: 800;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
 
     .hero-subtitle {
-        font-size: 16px;
+        font-size: 15px;
         color: #cbd5e1;
-        margin-bottom: 18px;
+        margin-bottom: 16px;
     }
 
     .pill {
@@ -85,10 +94,10 @@ st.markdown(
         padding: 6px 12px;
         border-radius: 999px;
         font-size: 12px;
-        font-weight: 600;
+        font-weight: 700;
         color: #dbeafe;
         background: rgba(59, 130, 246, 0.18);
-        border: 1px solid rgba(96, 165, 250, 0.28);
+        border: 1px solid rgba(96, 165, 250, 0.25);
         margin-right: 8px;
         margin-bottom: 8px;
     }
@@ -97,7 +106,7 @@ st.markdown(
         background: #111827;
         border: 1px solid #1f2937;
         border-radius: 20px;
-        padding: 20px;
+        padding: 18px;
         margin-bottom: 16px;
         box-shadow: 0 8px 24px rgba(0,0,0,0.18);
     }
@@ -106,14 +115,14 @@ st.markdown(
         background: linear-gradient(135deg, #111827 0%, #1e293b 100%);
         border: 1px solid #334155;
         border-radius: 20px;
-        padding: 20px;
+        padding: 18px;
         margin-bottom: 16px;
         box-shadow: 0 8px 24px rgba(0,0,0,0.18);
     }
 
     .section-title {
         font-size: 20px;
-        font-weight: 700;
+        font-weight: 800;
         margin-bottom: 10px;
     }
 
@@ -154,7 +163,7 @@ st.markdown(
 
     .meal-title {
         font-size: 18px;
-        font-weight: 700;
+        font-weight: 800;
         margin-bottom: 12px;
     }
 
@@ -170,30 +179,9 @@ st.markdown(
         margin-bottom: 12px;
     }
 
-    .small-kpi {
-        background: #111827;
-        border: 1px solid #1f2937;
-        border-radius: 18px;
-        padding: 16px;
-        text-align: left;
-        margin-bottom: 10px;
-    }
-
-    .small-kpi-label {
-        font-size: 13px;
-        color: #94a3b8;
-        margin-bottom: 6px;
-    }
-
-    .small-kpi-value {
-        font-size: 24px;
-        font-weight: 800;
-        color: #f8fafc;
-    }
-
     .exercise-header {
         font-size: 20px;
-        font-weight: 700;
+        font-weight: 800;
         margin-bottom: 4px;
     }
 
@@ -201,6 +189,12 @@ st.markdown(
         color: #94a3b8;
         font-size: 14px;
         margin-bottom: 12px;
+    }
+
+    .footer-tip {
+        color: #94a3b8;
+        font-size: 13px;
+        margin-top: 8px;
     }
 
     div[data-testid="stMetric"] {
@@ -214,20 +208,17 @@ st.markdown(
         border-radius: 18px;
         overflow: hidden;
     }
-
-    .footer-tip {
-        color: #94a3b8;
-        font-size: 13px;
-        margin-top: 8px;
-    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 # =========================
-# FIXED PERSONAL DATA
+# DATA
 # =========================
+DATA_DIR = Path("data")
+DATA_DIR.mkdir(exist_ok=True)
+DB_PATH = str(DATA_DIR / "body_os.db")
 
 MEAL_PLAN = [
     {
@@ -268,131 +259,35 @@ CARDIO_PLAN = "Кардио: 5 раз в неделю по 45 минут"
 
 WORKOUT_TEMPLATES = {
     "Push": [
-        {
-            "exercise": "Сведение рук в тренажере бабочка",
-            "reps": "15 / 15 / 12",
-            "weights": [36.0, 41.0, 45.0],
-            "note": "",
-        },
-        {
-            "exercise": "Жим гантелей лежа 30°",
-            "reps": "15 / 12 / 10",
-            "weights": [16.0, 18.0, 20.0],
-            "note": "",
-        },
-        {
-            "exercise": "Жим в тренажере сидя на грудь",
-            "reps": "15 / 12 / 10",
-            "weights": [27.0, 32.0, 36.0],
-            "note": "",
-        },
-        {
-            "exercise": "Отведение гантелей в стороны",
-            "reps": "15 / 15 / 12",
-            "weights": [7.0, 8.0, 9.0],
-            "note": "",
-        },
-        {
-            "exercise": "Жим в тренажере хаммер на дельты",
-            "reps": "15 / 12 / 10",
-            "weights": [9.0, 14.0, 18.0],
-            "note": "Начать чуть легче: в прошлый раз первый сет зашел тяжеловато.",
-        },
-        {
-            "exercise": "Разгибание V-образной рукояти в блоке",
-            "reps": "15 / 15 / 12",
-            "weights": [11.3, 13.5, 15.8],
-            "note": "",
-        },
-        {
-            "exercise": "Отжимания на брусьях в гравитроне",
-            "reps": "12 / 12 / 10",
-            "weights": [23.0, 18.0, 14.0],
-            "note": "Вес помощи в гравитроне: меньше помощь = тяжелее.",
-        },
+        {"exercise": "Сведение рук в тренажере бабочка", "reps": "15 / 15 / 12", "weights": [36.0, 41.0, 45.0], "note": ""},
+        {"exercise": "Жим гантелей лежа 30°", "reps": "15 / 12 / 10", "weights": [16.0, 18.0, 20.0], "note": ""},
+        {"exercise": "Жим в тренажере сидя на грудь", "reps": "15 / 12 / 10", "weights": [27.0, 32.0, 36.0], "note": ""},
+        {"exercise": "Отведение гантелей в стороны", "reps": "15 / 15 / 12", "weights": [7.0, 8.0, 9.0], "note": ""},
+        {"exercise": "Жим в тренажере хаммер на дельты", "reps": "15 / 12 / 10", "weights": [9.0, 14.0, 18.0], "note": "Начать чуть легче: в прошлый раз первый сет зашел тяжеловато."},
+        {"exercise": "Разгибание V-образной рукояти в блоке", "reps": "15 / 15 / 12", "weights": [11.3, 13.5, 15.8], "note": ""},
+        {"exercise": "Отжимания на брусьях в гравитроне", "reps": "12 / 12 / 10", "weights": [23.0, 18.0, 14.0], "note": "Вес помощи в гравитроне: меньше помощь = тяжелее."},
     ],
     "Pull": [
-        {
-            "exercise": "Тяга верхнего блока, хват чуть шире плеч",
-            "reps": "15 / 15 / 12",
-            "weights": [32.0, 39.0, 45.0],
-            "note": "",
-        },
-        {
-            "exercise": "Тяга верхнего блока с V-образной рукоятью",
-            "reps": "15 / 12 / 10",
-            "weights": [39.0, 45.0, 52.0],
-            "note": "",
-        },
-        {
-            "exercise": "Тяга горизонтального блока с V-образной рукоятью",
-            "reps": "15 / 12 / 10",
-            "weights": [39.0, 45.0, 52.0],
-            "note": "",
-        },
-        {
-            "exercise": "Разведение рук сидя в бабочке на заднюю дельту",
-            "reps": "15 / 15 / 12",
-            "weights": [23.0, 27.0, 29.2],
-            "note": "",
-        },
-        {
-            "exercise": "Сгибание рук сидя в тренажере Скота",
-            "reps": "15 / 12 / 12",
-            "weights": [14.0, 14.0, 14.0],
-            "note": "",
-        },
-        {
-            "exercise": "Сгибание рук стоя с Z-образным грифом",
-            "reps": "12 / 12 / 10",
-            "weights": [10.0, 10.0, 10.0],
-            "note": "",
-        },
+        {"exercise": "Тяга верхнего блока, хват чуть шире плеч", "reps": "15 / 15 / 12", "weights": [32.0, 39.0, 45.0], "note": ""},
+        {"exercise": "Тяга верхнего блока с V-образной рукоятью", "reps": "15 / 12 / 10", "weights": [39.0, 45.0, 52.0], "note": ""},
+        {"exercise": "Тяга горизонтального блока с V-образной рукоятью", "reps": "15 / 12 / 10", "weights": [39.0, 45.0, 52.0], "note": ""},
+        {"exercise": "Разведение рук сидя в бабочке на заднюю дельту", "reps": "15 / 15 / 12", "weights": [23.0, 27.0, 29.2], "note": ""},
+        {"exercise": "Сгибание рук сидя в тренажере Скота", "reps": "15 / 12 / 12", "weights": [14.0, 14.0, 14.0], "note": ""},
+        {"exercise": "Сгибание рук стоя с Z-образным грифом", "reps": "12 / 12 / 10", "weights": [10.0, 10.0, 10.0], "note": ""},
     ],
     "Legs": [
-        {
-            "exercise": "Разгибания сидя в тренажере",
-            "reps": "18 / 15 / 15 / 12",
-            "weights": [35.3, 38.3, 43.3, 47.3],
-            "note": "",
-        },
-        {
-            "exercise": "Жим ногами",
-            "reps": "15 / 12 / 10",
-            "weights": [100.0, 120.0, 140.0],
-            "note": "",
-        },
-        {
-            "exercise": "Сгибание ног сидя",
-            "reps": "15 / 15 / 12",
-            "weights": [27.0, 32.0, 36.0],
-            "note": "В прошлый раз было легко: можно взять тяжелее.",
-        },
-        {
-            "exercise": "Сгибание ног лежа",
-            "reps": "15 / 12 / 12",
-            "weights": [27.0, 32.0, 36.0],
-            "note": "",
-        },
-        {
-            "exercise": "Отведение гантелей в стороны",
-            "reps": "15 / 15 / 12",
-            "weights": [7.0, 8.0, 9.0],
-            "note": "",
-        },
-        {
-            "exercise": "Тяга штанги к груди",
-            "reps": "15 / 12 / 12",
-            "weights": [20.0, 25.0, 25.0],
-            "note": "",
-        },
+        {"exercise": "Разгибания сидя в тренажере", "reps": "18 / 15 / 15 / 12", "weights": [35.3, 38.3, 43.3, 47.3], "note": ""},
+        {"exercise": "Жим ногами", "reps": "15 / 12 / 10", "weights": [100.0, 120.0, 140.0], "note": ""},
+        {"exercise": "Сгибание ног сидя", "reps": "15 / 15 / 12", "weights": [27.0, 32.0, 36.0], "note": "В прошлый раз было легко: можно взять тяжелее."},
+        {"exercise": "Сгибание ног лежа", "reps": "15 / 12 / 12", "weights": [27.0, 32.0, 36.0], "note": ""},
+        {"exercise": "Отведение гантелей в стороны", "reps": "15 / 15 / 12", "weights": [7.0, 8.0, 9.0], "note": ""},
+        {"exercise": "Тяга штанги к груди", "reps": "15 / 12 / 12", "weights": [20.0, 25.0, 25.0], "note": ""},
     ],
 }
 
 # =========================
 # DB
 # =========================
-
 def get_conn():
     return sqlite3.connect(DB_PATH, check_same_thread=False)
 
@@ -446,7 +341,6 @@ init_db()
 # =========================
 # HELPERS
 # =========================
-
 def get_note(exercise_name: str) -> str:
     conn = get_conn()
     df = pd.read_sql(
@@ -556,39 +450,40 @@ def render_hero():
         <div class="hero">
             <div class="hero-title">Body OS</div>
             <div class="hero-subtitle">
-                Тренировки, питание и восстановление — в одном месте.
+                Тренировки, питание и прогресс — в одном месте.
             </div>
-            <span class="pill">PPL-сплит</span>
+            <span class="pill">PPL</span>
             <span class="pill">{CARDIO_PLAN}</span>
             <span class="pill">{count_meals()} приема пищи</span>
-            <span class="pill">{count_total_exercises()} упражнений в шаблоне</span>
+            <span class="pill">{count_total_exercises()} упражнений</span>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-
 # =========================
 # SIDEBAR
 # =========================
-
 st.sidebar.markdown("## Body OS")
 st.sidebar.caption("Личный фитнес-трекер")
 
 page = st.sidebar.radio(
-    "Раздел",
-    ["Сегодня", "Meal Plan", "Тренировки", "История"],
+    "Навигация",
+    ["📊 Дашборд", "🍽️ Meal Plan", "🏋️ Тренировки", "📜 История"],
 )
 
+if st.sidebar.button("Выйти", use_container_width=True):
+    st.session_state.auth = False
+    st.rerun()
+
 st.sidebar.markdown("---")
-st.sidebar.caption("Локальная версия")
-st.sidebar.write("Python + Streamlit + SQLite")
+st.sidebar.caption("Среда")
+st.sidebar.write("Windows + GitHub + Yandex Cloud")
 
 # =========================
-# PAGE: TODAY
+# DASHBOARD
 # =========================
-
-if page == "Сегодня":
+if page == "📊 Дашборд":
     render_hero()
 
     c1, c2, c3 = st.columns(3)
@@ -603,7 +498,7 @@ if page == "Сегодня":
 
     with left:
         st.markdown('<div class="card-soft">', unsafe_allow_html=True)
-        st.markdown('<div class="section-title">Последние сохраненные записи</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Последние записи</div>', unsafe_allow_html=True)
         history = get_last_logs(10)
         if history.empty:
             st.markdown('<div class="muted">Пока нет сохраненных тренировок.</div>', unsafe_allow_html=True)
@@ -614,34 +509,26 @@ if page == "Сегодня":
     with right:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="section-title">Фокус</div>', unsafe_allow_html=True)
-        st.write("Push / Pull / Legs загружены с последними весами.")
-        st.write("Meal plan вынесен в отдельный красивый блок.")
-        st.write("Заметки по проблемным упражнениям уже подключены.")
+        st.write("Тренировки по реальному PPL-сплиту")
+        st.write("Meal plan вынесен в отдельный раздел")
+        st.write("История весов сохраняется")
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="section-title">Быстрые напоминания</div>', unsafe_allow_html=True)
-        st.markdown(
-            '<div class="note-box">Жим в хаммере на дельты — начать чуть легче.</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            '<div class="note-box">Сгибание ног сидя — можно брать тяжелее.</div>',
-            unsafe_allow_html=True,
-        )
+        st.markdown('<div class="section-title">Напоминания</div>', unsafe_allow_html=True)
+        st.markdown('<div class="note-box">Жим в хаммере на дельты — начать чуть легче.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="note-box">Сгибание ног сидя — можно брать тяжелее.</div>', unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================
-# PAGE: MEAL PLAN
+# MEAL PLAN
 # =========================
-
-if page == "Meal Plan":
+elif page == "🍽️ Meal Plan":
     render_hero()
     st.markdown("## Meal Plan")
     st.caption("Текущий фиксированный план питания")
 
     cols = st.columns(2)
-
     for i, meal in enumerate(MEAL_PLAN):
         items_html = "".join([f"<li>{item}</li>" for item in meal["items"]])
         with cols[i % 2]:
@@ -650,27 +537,21 @@ if page == "Meal Plan":
                 <div class="meal-card">
                     <div class="badge">{meal['meal']}</div>
                     <div class="meal-title">{meal['meal']}</div>
-                    <ul>
-                        {items_html}
-                    </ul>
+                    <ul>{items_html}</ul>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-    st.markdown(
-        f'<div class="warn-box">{CARDIO_PLAN}</div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown(f'<div class="warn-box">{CARDIO_PLAN}</div>', unsafe_allow_html=True)
 
 # =========================
-# PAGE: WORKOUTS
+# WORKOUTS
 # =========================
-
-if page == "Тренировки":
+elif page == "🏋️ Тренировки":
     render_hero()
     st.markdown("## Тренировки")
-    st.caption("Последние веса подставляются автоматически, если упражнение уже сохранялось")
+    st.caption("Последние веса подставляются автоматически")
 
     top1, top2 = st.columns([1, 1])
     with top1:
@@ -696,14 +577,8 @@ if page == "Тренировки":
             note = get_note(ex["exercise"])
 
             st.markdown('<div class="card">', unsafe_allow_html=True)
-            st.markdown(
-                f'<div class="exercise-header">{idx}. {ex["exercise"]}</div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                f'<div class="exercise-sub">Целевые повторы: {ex["reps"]}</div>',
-                unsafe_allow_html=True,
-            )
+            st.markdown(f'<div class="exercise-header">{idx}. {ex["exercise"]}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="exercise-sub">Целевые повторы: {ex["reps"]}</div>', unsafe_allow_html=True)
 
             if last_date:
                 st.caption(
@@ -715,48 +590,20 @@ if page == "Тренировки":
                 st.caption("Истории пока нет — используются стартовые веса из шаблона")
 
             if note:
-                st.markdown(
-                    f'<div class="note-box">{note}</div>',
-                    unsafe_allow_html=True,
-                )
+                st.markdown(f'<div class="note-box">{note}</div>', unsafe_allow_html=True)
 
             cols = st.columns(4)
-
-            w1 = cols[0].number_input(
-                "Вес 1",
-                min_value=0.0,
-                value=float(default_weights[0] or 0.0),
-                step=0.5,
-                key=f"{ex['exercise']}_w1",
-            )
-            w2 = cols[1].number_input(
-                "Вес 2",
-                min_value=0.0,
-                value=float(default_weights[1] or 0.0),
-                step=0.5,
-                key=f"{ex['exercise']}_w2",
-            )
-            w3 = cols[2].number_input(
-                "Вес 3",
-                min_value=0.0,
-                value=float(default_weights[2] or 0.0),
-                step=0.5,
-                key=f"{ex['exercise']}_w3",
-            )
-            w4 = cols[3].number_input(
-                "Вес 4",
-                min_value=0.0,
-                value=float(default_weights[3] or 0.0),
-                step=0.5,
-                key=f"{ex['exercise']}_w4",
-            )
+            w1 = cols[0].number_input("Вес 1", min_value=0.0, value=float(default_weights[0] or 0.0), step=0.5, key=f"{ex['exercise']}_w1")
+            w2 = cols[1].number_input("Вес 2", min_value=0.0, value=float(default_weights[1] or 0.0), step=0.5, key=f"{ex['exercise']}_w2")
+            w3 = cols[2].number_input("Вес 3", min_value=0.0, value=float(default_weights[2] or 0.0), step=0.5, key=f"{ex['exercise']}_w3")
+            w4 = cols[3].number_input("Вес 4", min_value=0.0, value=float(default_weights[3] or 0.0), step=0.5, key=f"{ex['exercise']}_w4")
 
             comment_default = note if note else last_comment
-
             comment = st.text_input(
-                f"{ex['exercise']}_comment",
+                "Комментарий",
                 value=comment_default,
                 placeholder="Комментарий на тренировку",
+                key=f"{ex['exercise']}_comment",
             )
 
             rows_to_save.append(
@@ -780,20 +627,17 @@ if page == "Тренировки":
 
     if submitted:
         save_workout_rows(rows_to_save)
-
         for ex, row in zip(exercises, rows_to_save):
             save_note(ex["exercise"], row[8] or "")
-
         st.success("Тренировка сохранена")
 
 # =========================
-# PAGE: HISTORY
+# HISTORY
 # =========================
-
-if page == "История":
+else:
     render_hero()
     st.markdown("## История тренировок")
-    st.caption("Все сохраненные записи и текущие шаблонные веса")
+    st.caption("Все сохраненные записи и текущие рабочие веса")
 
     filter_col1, filter_col2 = st.columns([1, 2])
     with filter_col1:
@@ -814,7 +658,7 @@ if page == "История":
         st.dataframe(history, use_container_width=True, hide_index=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("### Текущие шаблонные веса")
+    st.markdown("### Текущие рабочие веса")
 
     for workout_type, exercises in WORKOUT_TEMPLATES.items():
         st.markdown(f"#### {workout_type}")
@@ -839,4 +683,4 @@ if page == "История":
             )
 
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-        st.markdown('<div class="footer-tip">В этой таблице уже отображаются последние сохраненные веса по упражнениям.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="footer-tip">Тут отображаются последние сохраненные веса по каждому упражнению.</div>', unsafe_allow_html=True)
